@@ -1,0 +1,4 @@
+#JSON PROTOCOL DEFINITION
+
+##Structure
+

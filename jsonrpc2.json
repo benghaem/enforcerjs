@@ -1,0 +1,58 @@
+{
+	"name": "JSON-RPC 2.0",
+	"style": "json",
+
+	"global" : {
+		"keys": ["jsonrpc", "id"],
+		"require": ["jsonrpc", "id"],
+		"_jsonrpc": {
+			"type":"string",
+			"fixed":"2.0"
+		},
+		"_id":{
+			"type":"number",
+			"%":["trackid"]
+		}
+	},
+
+	"request": {
+		"keys": ["method", "params"],
+		"require": ["method"],
+		"_method":{
+			"type":"string"
+		},
+		"_params":{
+			"type": "object",
+			"keys": ["thing"],
+			"require": ["thing"],
+			"_thing":{
+				"type":"number",
+			}
+		}
+	},
+
+	"response": {
+		"keys": ["result","error"],
+		"require": [["result","error"]],
+		"result_error_mode": "split",
+		"result_key": "result",
+		"error_key": "error",
+
+		"_error":{
+			"type": "object",
+			"keys": ["code","message","data"],
+			"require": ["*"],
+			"_code": {
+				"type": "number",
+			},
+			"_message": {
+				"type": "string",
+			},
+			"_data": {
+				"type": "ANY",
+			},
+		},
+	},
+}
+
+
