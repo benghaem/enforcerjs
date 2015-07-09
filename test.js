@@ -14,15 +14,32 @@ var enforcerproto = {
 		"require": ["global"],
 
 		"#":{
-			"keys":["keys","require"],
-			"require":["keys","require"],
+			"type":"object",
+			"keys":["keys","require","randoobj"],
+			"require":["keys","require","randoobj"],
+
+			"#":{
+				"type":"object",
+				"keys":["special"],
+				"require":["special"],
+
+				"_special":{
+					"type":"string"
+				},
+			},
+
 			"_keys":{
 				"type": "array",
 				"map2key": function(x){return '_'+x},
 			},
 			"_require":{
 				"type": "array"
-			}
+			},
+			"_randoobj":{
+				"type": "object",
+				"keys": [],
+				"require": [],
+			},
 
 		},
 

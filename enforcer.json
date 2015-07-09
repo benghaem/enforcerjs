@@ -2,9 +2,15 @@
 	"name": "Enforcer.js RPC 1.0",
 	"style": "json",
 	"enforce":{
-		"keys": ["global"],
-		"require": ["global"],
+		"type":"object",
+		"keys": ["name", "style", "global", "request", "response", "#"],
+		"require": ["name", "style", "global", "request", "response"],
 
+		"#":{
+			"keys":[],
+			"require":[]
+		},
+		
 		"_global":{
 			"type":"object",
 			"keys":["*"],

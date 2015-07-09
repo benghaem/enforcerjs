@@ -1,4 +1,12 @@
 #JSON PROTOCOL DEFINITION
 
-##Structure
+#Baseline Requirements
+Declare Name
+Declare Style
+
+##Style Requirements [json]
+
+
+
+
 

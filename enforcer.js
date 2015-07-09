@@ -116,18 +116,118 @@ function parse_json_top(protocol){
 	// }
 }
 
-function parse_json_merge_global(top_level_obj, global){
-	top_level_obj['keys'] = top_level_obj['keys'].concat(global['keys'])
-	if (top_level_obj['require'][0] !== '*') {
-		top_level_obj['require'] = top_level_obj['require'].concat(global['require'])
+
+function parse_json_eval_globals(obj){
+	if (obj['type']){
+		if (obj['type'] === "object") {
+			var obj_keys = obj['keys'].map(convert_key).concat("#");
+			for (var i = obj_keys.length - 1; i >= 0; i--) {
+				if (obj[obj_keys[i]]['#']){
+					return merge_vals(obj,parse_json_eval_globals(obj['#']))
+				} 
+				else if (obj['#']){
+					return merge_vals(obj,obj['#']);
+				}
+				else{
+					return obj;
+				}
+			};
+		}
+	}
+}
+
+function merge_globals(obj, merge_obj){
+	var merge_obj_keys = merge_obj['keys'].map(convert_key)
+	console.log('merge_keys',merge_obj_keys)
+	var obj_keys = obj['keys'].map(convert_key)
+	console.log('obj_keys',obj_keys)
+	for (var i = obj_keys.length - 1; i >= 0; i--) {
+		console.log('working on',obj_keys[i])
+		if (obj[obj_keys[i]]['type'] === "object"){
+			obj[obj_keys[i]]['keys'] = obj[obj_keys[i]]['keys'].concat(merge_obj['keys'])
+			obj[obj_keys[i]]['require'] = obj[obj_keys[i]]['require'].concat(merge_obj['require'])
+			for (var j = merge_obj_keys.length - 1; j >= 0; j--) {
+				obj[obj_keys[i]][merge_obj_keys[j]] = merge_obj[merge_obj_keys[j]]
+			};
+		}
+		else{
+			console.log('failed obj check')
+		}
 	};
-	for (var i = global['keys'].length - 1; i >= 0; i--) {
-		top_level_obj["_"+global['keys'][i]] = global["_"+global['keys'][i]]
-	};
-	return top_level_obj
+	return obj;
+}
+
+
+
+function convert_key(key){
+	var out = ""
+	if (key === "*"){
+		out = key;
+	}
+	else{
+		out = "_"+key
+	}
+	return out;
 }
 
 function parse_json_create_parser(protocol_obj){
+	var fn_bank = {}
+
+	parse_json_eval_globals(protocol_obj)
+
+
+	console.log(protocol_obj)
+
+	console.log('Test deep dive')
+	deep_dive_obj(protocol_obj,'top')
+	console.log(fn_bank)
+
+
+
+	function derive_optional(key,keys,reqs){
+		return keys.indexOf(key) !== -1 && reqs.indexOf(key) === -1
+	}
+
+	//discover all non object keys and run 
+	function deep_dive_obj(obj,name){
+		//check for type atribute
+		if (obj['type']){
+			//if the type is object there may be some keys
+			if (obj['type'] === 'object'){
+
+				//grab those keys then check for global marker
+				var test_keys = obj['keys'].map(convert_key);
+
+				//there may be a global marker
+				if (obj['#']){
+					deep_dive_obj(obj['#'])
+				}
+				console.log(obj)
+
+
+				
+				//iterate over test keys
+				for (var i = test_keys.length - 1; i >= 0; i--) {
+					//if we found a key --> attempt to deep dive it
+					if (obj[test_keys[i]]){
+						return deep_dive_obj(obj[test_keys[i]],name + "-" +obj['keys'][i]);
+					}
+				};
+			}
+			if (obj['type'] === 'array'){
+				console.log('found array')
+				if (obj['map2key']){
+					console.log('found map2key')
+					var newfn = function(val){val.map(obj['map2key'])}
+					fn_bank[name] = newfn
+				}
+			}
+			else{
+				console.log(obj)
+				return;
+			}
+		}
+	}
 
 	var proto_keys = protocol_obj['keys']
 	var proto_reqs = protocol_obj['require']
@@ -137,35 +237,6 @@ function parse_json_create_parser(protocol_obj){
 		working_keys = [];
 	}
 
-	if (protocol_obj['#']){
-		for (var i = proto_keys.length - 1; i >= 0; i--) {
-			if (protocol_obj[working_keys[i]]['type'] === 'object'){
-				protocol_obj[working_keys[i]] = parse_json_merge_global(protocol_obj[working_keys[i]],protocol_obj['#'])
-			}
-		};
-	}
-
-	delete protocol_obj['#']
-	console.log(protocol_obj)
-
-	
-
-	function convert_key(key){
-		var out = ""
-		if (key === "*"){
-			out = key;
-		}
-		else{
-			out = "_"+key
-		}
-		return out;
-	}
-
-	function derive_optional(key,keys,reqs){
-		return keys.indexOf(key) !== -1 && reqs.indexOf(key) === -1
-	}
-
-
 	if (enforcer.ck_keys(protocol_obj,OBJ_REQ_KEYS.concat(working_keys),OBJ_KEYS.concat(working_keys))){
 
 
@@ -174,6 +245,21 @@ function parse_json_create_parser(protocol_obj){
 
 		return function(obj){
 			var state = true;
+			//Check for dynamic requirement updates
+			fn_bank_keys = Object.keys(fn_bank)
+			console.log("fn bank")
+			console.log(fn_bank)
+			if (fn_bank_keys.length > 0){
+				for (var i = fn_bank_keys.length - 1; i >= 0; i--) {
+					obj_value = obj[fn_bank_keys[i]]
+					fn_bank_function = fn_bank[fn_bank_keys[i]]
+					proto_keys = proto_keys.concat(fn_bank_function(obj_value))
+					proto_reqs = proto_reqs.concat(fn_bank_function(obj_value))
+				};
+				console.log("updated keys: "+proto_keys)
+				console.log("updated reqs: "+proto_reqs)
+			}
+
 			// Check requirements
 			if (enforcer.ck_keys(obj, proto_reqs, proto_keys)){
 				//check type if not a wildcard type
@@ -217,6 +303,35 @@ function parse_json_create_parser(protocol_obj){
 		}
 	}	
 }
+
+
+var parser = function(){
+
+	var generate = function(obj){
+		//first check for only object key: "type"
+		if (obj['type']){
+			//now lets descriminate based on object type:
+			switch (obj['type']){
+				case "object":
+
+					break;
+				case "string":
+					break;
+				case "array":
+					break;
+			}
+
+
+		} else {
+			throw Error("object does not have a type key")
+		}
+	}
+
+	return{
+		gen:generate
+	}
+}()
+
 
 var enforcerproto ={
 	"name": "Enforcer.js RPC 1.0",
