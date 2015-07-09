@@ -21,10 +21,15 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
+var OBJ_REQ_KEYS = ['keys','require']
+var OBJ_KEYS = ['keys','require','type']
+
 var enforcer = function(){
 
 	var check_keys = function(obj, require_arr, keys_arr){
-		console.log("checking:"+JSON.stringify(obj)+","+require_arr+","+keys_arr)
+		console.log("Checking keys on:")
+		console.log(obj)
+		console.log("req arr:"+require_arr+", keys arr:"+keys_arr)
 		var obj_keys = Object.keys(obj);
 		console.log("keys from obj:" + obj_keys)
 		var missing_keys = find_missing(require_arr, obj_keys);
@@ -74,7 +79,7 @@ function top_level(protocol){
 	name = protocol['name'];
 	style = protocol['style']
 	if (style === 'json') {
-		return parse_json_top(protocol);
+		return parse_json_top(protocol['enforce']);
 	};
 }
 
@@ -82,20 +87,33 @@ function parse_json_top(protocol){
 	//make nice var name
 	var p = protocol
 
-	//Check for required keys
-	if (p['request'] && p['response']){
-		var req = p['request']
-		var res = p['response']
+	return parse_json_create_parser(p)
+	// var p_req_k = p['require']
+	// var p_K = p['keys']
 
-		if (p['global']){
-			req = parse_json_merge_global(req,p['global']);
-			res = parse_json_merge_global(res,p['global']);
-		}
+	// //Check for required keys
+	// if (enforcer.ck_keys(p,p_req_k,p_K)){
 		
-		var req_parser = parse_json_create_parser(req);
-		return req_parser
+	// 	for (var i = Object.keys(p).length - 1; i >= 0; i--) {
+	// 		if (Object.keys(p)[i] !==  "#" ){
+	// 			// key_extended = parse_json_merge_global(Object.keys(p)[i],p['#'])
+	// 			var parser = parse_json_create_parser(key_extended)
+	// 			return parser;
+	// 		}
+	// 	};
 
-	}
+		// var req = p['request']
+		// var res = p['response']
+
+		// if (p['#']){
+		// 	req = parse_json_merge_global(req,p['global']);
+		// 	res = parse_json_merge_global(res,p['global']);
+		// }
+		
+		// var req_parser = parse_json_create_parser(req);
+		// return req_parser
+
+	// }
 }
 
 function parse_json_merge_global(top_level_obj, global){
@@ -110,6 +128,27 @@ function parse_json_merge_global(top_level_obj, global){
 }
 
 function parse_json_create_parser(protocol_obj){
+
+	var proto_keys = protocol_obj['keys']
+	var proto_reqs = protocol_obj['require']
+
+	var working_keys = protocol_obj['keys'].map(convert_key)
+	if (working_keys.length === 1 && working_keys[0] === "*"){
+		working_keys = [];
+	}
+
+	if (protocol_obj['#']){
+		for (var i = proto_keys.length - 1; i >= 0; i--) {
+			if (protocol_obj[working_keys[i]]['type'] === 'object'){
+				protocol_obj[working_keys[i]] = parse_json_merge_global(protocol_obj[working_keys[i]],protocol_obj['#'])
+			}
+		};
+	}
+
+	delete protocol_obj['#']
+	console.log(protocol_obj)
+
+	
 
 	function convert_key(key){
 		var out = ""
@@ -126,15 +165,9 @@ function parse_json_create_parser(protocol_obj){
 		return keys.indexOf(key) !== -1 && reqs.indexOf(key) === -1
 	}
 
-	var working_keys = protocol_obj['keys'].map(convert_key)
-	if (working_keys.length === 1 && working_keys[0] === "*"){
-		working_keys = [];
-	}
 
 	if (enforcer.ck_keys(protocol_obj,OBJ_REQ_KEYS.concat(working_keys),OBJ_KEYS.concat(working_keys))){
-		
-		var proto_keys = protocol_obj['keys']
-		var proto_reqs = protocol_obj['require']
+
 
 		console.log("keys: "+proto_keys)
 		console.log("reqs: "+proto_reqs)
@@ -150,7 +183,9 @@ function parse_json_create_parser(protocol_obj){
 				else {
 					console.log("KEYSS again:"+proto_keys);
 					for (var i = proto_keys.length - 1; i >= 0; i--) {
-						console.log("inside loop somehow")
+						console.log("Working on: " + proto_keys[i])
+						console.log("working_key_version: " + working_keys[i])
+
 						var obj_key_type = typeof(obj[proto_keys[i]])
 						var proto_key_type = protocol_obj[working_keys[i]]['type']
 						// console.log(typeof(obj[proto_keys[i]]),protocol_obj[working_keys[i]]['type'])
@@ -183,8 +218,26 @@ function parse_json_create_parser(protocol_obj){
 	}	
 }
 
-var OBJ_REQ_KEYS = ['keys','require']
-var OBJ_KEYS = ['keys','require','type']
+var enforcerproto ={
+	"name": "Enforcer.js RPC 1.0",
+	"style": "json",
+	"enforce":{
+		"keys": ["global"],
+		"require": ["global"],
+
+		"_global":{
+			"type":"object",
+			"keys":["*"],
+			"require":["keys","require"],
+			"_keys":{
+				"type":"array",
+			},
+			"_require":{
+				"type":"array"
+			}
+		}
+	}
+}
 
 var jsonrpc2proto = {
 	"name": "JSON-RPC 2.0",
