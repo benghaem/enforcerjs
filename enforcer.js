@@ -26,56 +26,69 @@ var OBJ_KEYS = ['keys','require','type']
 
 var enforcer = function(){
 
-	var check_keys = function(obj, require_arr, keys_arr){
+	function check_keys(obj, require_arr, keys_arr){
+
+		// Finds keys in key_arr that do not exist in test_arr
+		function find_missing(key_arr, test_arr){
+			var arr_a = key_arr;
+			var arr_b = test_arr;
+			var miss = [];
+			for (var i = arr_a.length - 1; i >= 0; i--) {
+				//Wildcard support. Ignore check if the key array value is a wildcard
+				if (arr_a[i] !== '*'){
+					if (arr_b.indexOf(arr_a[i]) === -1) {
+					miss.push(arr_a[i])
+					};
+				};
+			};
+			return miss;
+		}
+
+		function find_extra(key_arr, test_arr){
+			return find_missing(test_arr, key_arr);
+		}
+
+		// Find the difference between the key_arr and the test_arr
+		function find_diff(key_arr, test_arr){
+			return {'missing':find_missing(key_arr,test_arr),'extra':find_extra(key_arr,test_arr)};
+		}
+
 		console.log("Checking keys on:")
 		console.log(obj)
 		console.log("req arr:"+require_arr+", keys arr:"+keys_arr)
+
+		//convert the keys to array
 		var obj_keys = Object.keys(obj);
+
 		console.log("keys from obj:" + obj_keys)
+
+		//find the missing keys and any extra keys
 		var missing_keys = find_missing(require_arr, obj_keys);
 		var extra_keys = find_extra(keys_arr, obj_keys);
+
+		//if we have missing keys throw an error
 		if (missing_keys.length > 0){
 			throw Error('Missing required key/s: '+missing_keys);
 			return false;
 		}
-		else if (extra_keys.length > 0 && keys_arr[0] !== "*"){
+		//if we have extra keys and the keys_arr does not contain a wildcard throw an error
+		else if (extra_keys.length > 0 && keys_arr.indexOf('*') === -1){
 			throw Error('Extra unexpected key/s: '+extra_keys);
 			return false;
+		//if all is well return true
 		}else{
 			return true;
-		}
-		
+		}	
 	}
+
 	
+
 	return{
 		ck_keys:check_keys
 	}
 }()
 
-// Finds keys in key_arr that do not exist in test_arr
-function find_missing(key_arr, test_arr){
-	var arr_a = key_arr;
-	var arr_b = test_arr;
-	var miss = [];
-	for (var i = arr_a.length - 1; i >= 0; i--) {
-		if (arr_a[i] !== '*'){
-			if (arr_b.indexOf(arr_a[i]) === -1) {
-			miss.push(arr_a[i])
-			};
-		};
-	};
-	return miss;
-}
 
-
-function find_extra(key_arr, test_arr){
-	return find_missing(test_arr, key_arr);
-}
-
-// Find the difference between the key_arr and the test_arr
-function find_diff(key_arr, test_arr){
-	return {'missing':find_missing(key_arr,test_arr),'extra':find_extra(key_arr,test_arr)};
-}
 
 function top_level(incoming_protocol){
 	var protocol = incoming_protocol
@@ -333,31 +346,3 @@ function parse_json_create_parser(protocol_obj){
 		}
 	}	
 }
-
-
-var parser = function(){
-
-	var generate = function(obj){
-		//first check for only object key: "type"
-		if (obj['type']){
-			//now lets descriminate based on object type:
-			switch (obj['type']){
-				case "object":
-
-					break;
-				case "string":
-					break;
-				case "array":
-					break;
-			}
-
-
-		} else {
-			throw Error("object does not have a type key")
-		}
-	}
-
-	return{
-		gen:generate
-	}
-}()
