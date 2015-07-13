@@ -6,28 +6,28 @@ EnforcerJS is a library that allows the creation of "enforcers" which can curren
 
 ##General
 
-[x] A simple ruleset format
-[x] JSON object validation / verification
+- [x] A simple ruleset format
+- [x] JSON object validation / verification
 
 ##JSON Object
 
-[x] Validate dynamic keys!
-[x] Layer-level globals
-[x] Type validation
-[x] Required and optional keys
-[x] Per object enforcers
+- [x] Validate dynamic keys!
+- [x] Layer-level globals
+- [x] Type validation
+- [x] Required and optional keys
+- [x] Per object enforcers
 
 #TODO
 
 ##General:
 
-[ ] Documentation
-[ ] Support custom string-based protocols
-[ ] Message handler generation
+- [ ] Documentation
+- [ ] Support custom string-based protocols
+- [ ] Message handler generation
 
 ##JSON:
 
-[ ] Fully recursive rulesets (Almost there)
-[ ] Mutually exclusive keys
-[ ] Data validation
-[ ] Global-globals
+- [ ] Fully recursive rulesets (Almost there)
+- [ ] Mutually exclusive keys
+- [ ] Data validation
+- [ ] Global-globals
