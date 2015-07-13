@@ -78,7 +78,7 @@ var enforcer = function(){
 					for (var i = obj_keys.length - 1; i >= 0; i--) {
 						if (obj_keys[i] !== '*'){
 							if (obj[obj_keys[i]]['#']){
-								return merge_globals(obj,parse_json_eval_globals(obj[obj_keys[i]]))
+								return merge_globals(obj,eval_globals(obj[obj_keys[i]]))
 							} 
 							else if (obj['#']){
 								var cache_obj = obj['#']
