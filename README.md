@@ -1,4 +1,5 @@
-#What is EnforcerJS?
+## (NOTE: Not currently in development)
+##What is EnforcerJS? 
 
 EnforcerJS is a library that allows the creation of "enforcers" which can currently verify JSON objects based on easy-to-write rulesets. 
 
